@@ -1,6 +1,6 @@
 import 'dart:io';
 
-int computePathsCountFromFile(String filePath){
+(int, int) computePathsCountFromFile(String filePath){
   var lines = File(filePath).readAsLinesSync();
   var topo = Topo.fromStrings(lines);
   return topo.computeMapScore();
@@ -46,27 +46,32 @@ class Topo {
     return res;
   }
 
- int computeTrailHeadScore(Coords head) {
+ (int, int) computeTrailHeadScore(Coords head) {
     var current = [head];
     var nines = <Coords>{};
+    var pathCounts = 0;
     while (!current.isEmpty) {
       var nextCoords = next(current.removeLast());
       for (var c in nextCoords) {
         if (map[c.$1][c.$2] == 9) {
           nines.add(c);
+          pathCounts++;
         } else {
           current.add(c);
         }
       }
     }
-    return nines.length;
+    return (nines.length, pathCounts);
   }
 
-  int computeMapScore() {
+  (int, int) computeMapScore() {
+    int ninesCount = 0;
     int pathCount = 0;
     for (var head in heads()) {
-      pathCount += computeTrailHeadScore(head);
+      var (n,p)= computeTrailHeadScore(head);
+      ninesCount += n;
+      pathCount += p;
     }
-    return pathCount;
+    return (ninesCount, pathCount);
   }
 }

@@ -51,7 +51,7 @@ void main() {
     expect(topo.next((3, 3)), {(3, 2)});
   });
 
-  test('trail head score', (){
+  test('trail head score', () {
     var topo = Topo.fromStrings([
       "89010123",
       "78121874",
@@ -63,15 +63,15 @@ void main() {
       "10456732"
     ]);
 
-    expect(topo.computeTrailHeadScore((0,2)), 5);
-    expect(topo.computeTrailHeadScore((0,4)), 6);
-    expect(topo.computeTrailHeadScore((2,4)), 5);
-    expect(topo.computeTrailHeadScore((4,6)), 3);
-    expect(topo.computeTrailHeadScore((5,2)), 1);
-    expect(topo.computeTrailHeadScore((5,5)), 3);
-    expect(topo.computeTrailHeadScore((6,0)), 5);
-    expect(topo.computeTrailHeadScore((6,6)), 3);
-    expect(topo.computeTrailHeadScore((7,1)), 5);
+    expect(topo.computeTrailHeadScore((0, 2)), (5, 20));
+    expect(topo.computeTrailHeadScore((0, 4)), (6, 24));
+    expect(topo.computeTrailHeadScore((2, 4)), (5, 10));
+    expect(topo.computeTrailHeadScore((4, 6)), (3, 4));
+    expect(topo.computeTrailHeadScore((5, 2)), (1, 1));
+    expect(topo.computeTrailHeadScore((5, 5)), (3, 4));
+    expect(topo.computeTrailHeadScore((6, 0)), (5, 5));
+    expect(topo.computeTrailHeadScore((6, 6)), (3, 8));
+    expect(topo.computeTrailHeadScore((7, 1)), (5, 5));
   });
 
   test('paths count', () {
@@ -86,6 +86,6 @@ void main() {
       "10456732"
     ]);
 
-    expect(topo.computeMapScore(), 36);
+    expect(topo.computeMapScore(), (36, 81));
   });
 }
