@@ -51,7 +51,6 @@ void main() {
     expect(topo.next((3, 3)), {(3, 2)});
   });
 
-  test('trail head score', () {
     var topo = Topo.fromStrings([
       "89010123",
       "78121874",
@@ -63,6 +62,8 @@ void main() {
       "10456732"
     ]);
 
+
+  test('trail head score', () {
     expect(topo.computeTrailHeadScore((0, 2)), (5, 20));
     expect(topo.computeTrailHeadScore((0, 4)), (6, 24));
     expect(topo.computeTrailHeadScore((2, 4)), (5, 10));
@@ -74,18 +75,12 @@ void main() {
     expect(topo.computeTrailHeadScore((7, 1)), (5, 5));
   });
 
-  test('paths count', () {
-    var topo = Topo.fromStrings([
-      "89010123",
-      "78121874",
-      "87430965",
-      "96549874",
-      "45678903",
-      "32019012",
-      "01329801",
-      "10456732"
-    ]);
-
+  test('map score', () {
     expect(topo.computeMapScore(), (36, 81));
+  });
+
+  test('map score parallel', () async {
+    var res = await topo.computeMapScoreParallel();
+    expect(res, (36, 81));
   });
 }

@@ -1,10 +1,4 @@
-import 'dart:io';
-
-(int, int) computePathsCountFromFile(String filePath){
-  var lines = File(filePath).readAsLinesSync();
-  var topo = Topo.fromStrings(lines);
-  return topo.computeMapScore();
-}
+import 'dart:isolate';
 
 typedef Coords = (int, int);
 
@@ -46,7 +40,7 @@ class Topo {
     return res;
   }
 
- (int, int) computeTrailHeadScore(Coords head) {
+  (int, int) computeTrailHeadScore(Coords head) {
     var current = [head];
     var nines = <Coords>{};
     var pathCounts = 0;
@@ -68,9 +62,24 @@ class Topo {
     int ninesCount = 0;
     int pathCount = 0;
     for (var head in heads()) {
-      var (n,p)= computeTrailHeadScore(head);
+      var (n, p) = computeTrailHeadScore(head);
       ninesCount += n;
       pathCount += p;
+    }
+    return (ninesCount, pathCount);
+  }
+
+  Future<(int, int)> computeMapScoreParallel() async {
+    var results = <Future<(int, int)>>[
+      for (var head in heads()) Isolate.run(() => computeTrailHeadScore(head))
+    ];
+
+    int ninesCount = 0;
+    int pathCount = 0;
+    for (var f in results) {
+      var r = await f;
+      ninesCount += r.$1;
+      pathCount += r.$2;
     }
     return (ninesCount, pathCount);
   }
