@@ -1,24 +1,26 @@
-int stonesCountFromString(String input, int iter) {
-  var stones = [for(var v in input.split(' ')) int.parse(v)];
-  return stonesCountFromStones(stones, iter);
-}
+class StonesCounter {
+  var cache = <(int, int), int>{};
 
-int stonesCountFromStones(List<int> stones, int iter) {
-  var res = 0;
-  for(var stone in stones){
-    res += stonesCountFromStone(stone, iter);
+  int stonesCountFromString(String input, int iter) {
+    var stones = [for (var v in input.split(' ')) int.parse(v)];
+    return stonesCountFromStones(stones, iter);
   }
-  return res;
-}
 
-int stonesCountFromStone(int stone, int iter){
-  if(iter == 0) return 1;
-
-  int res = 0;
-  for(var s in stoneChange(stone)){
-    res += stonesCountFromStone(s, iter-1);
+  int stonesCountFromStones(List<int> stones, int iter) {
+    return stones.fold(0, (acc, stone) => acc + stonesCountFromStone(stone, iter));
   }
-  return res;
+
+  int stonesCountFromStone(int stone, int iter) {
+    if (iter == 0) return 1;
+
+    if(cache.containsKey((stone, iter))){
+      return cache[(stone, iter)]!;
+    }
+
+    int res = stoneChange(stone).fold(0, (acc, next) => acc + stonesCountFromStone(next, iter-1));
+    cache[(stone, iter)] = res;
+    return res;
+  }
 }
 
 List<int> stoneChange(int stone) {

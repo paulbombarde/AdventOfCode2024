@@ -16,28 +16,30 @@ void main() {
   });
 
   test('stone count from single stone', (){
-    expect(stonesCountFromStone(12345, 0), 1);
+    var sc = StonesCounter();
+    expect(sc.stonesCountFromStone(12345, 0), 1);
 
-    expect(stonesCountFromStone(0, 1), 1);
-    expect(stonesCountFromStone(1, 1), 1);
-    expect(stonesCountFromStone(2024, 1), 2);
-    expect(stonesCountFromStone(20, 1), 2);
-    expect(stonesCountFromStone(24, 1), 2);
+    expect(sc.stonesCountFromStone(0, 1), 1);
+    expect(sc.stonesCountFromStone(1, 1), 1);
+    expect(sc.stonesCountFromStone(2024, 1), 2);
+    expect(sc.stonesCountFromStone(20, 1), 2);
+    expect(sc.stonesCountFromStone(24, 1), 2);
 
-    expect(stonesCountFromStone(0, 2), 1);
-    expect(stonesCountFromStone(1, 2), 2);
-    expect(stonesCountFromStone(2024, 2), 4);
+    expect(sc.stonesCountFromStone(0, 2), 1);
+    expect(sc.stonesCountFromStone(1, 2), 2);
+    expect(sc.stonesCountFromStone(2024, 2), 4);
   });
 
   test('stone count from stones', (){
-    expect(stonesCountFromStones([0, 1, 10, 99, 999], 1), 7);
+    var sc = StonesCounter();
+    expect(sc.stonesCountFromStones([0, 1, 10, 99, 999], 1), 7);
 
-    expect(stonesCountFromStones([125, 17], 1), 3);
-    expect(stonesCountFromStones([125, 17], 2), 4);
-    expect(stonesCountFromStones([125, 17], 3), 5);
-    expect(stonesCountFromStones([125, 17], 4), 9);
-    expect(stonesCountFromStones([125, 17], 5), 13);
-    expect(stonesCountFromStones([125, 17], 6), 22);
-    expect(stonesCountFromStones([125, 17], 25), 55312);
+    expect(sc.stonesCountFromStones([125, 17], 1), 3);
+    expect(sc.stonesCountFromStones([125, 17], 2), 4);
+    expect(sc.stonesCountFromStones([125, 17], 3), 5);
+    expect(sc.stonesCountFromStones([125, 17], 4), 9);
+    expect(sc.stonesCountFromStones([125, 17], 5), 13);
+    expect(sc.stonesCountFromStones([125, 17], 6), 22);
+    expect(sc.stonesCountFromStones([125, 17], 25), 55312);
   });
 }
