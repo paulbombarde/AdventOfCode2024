@@ -19,6 +19,25 @@ void main() {
     'OOOOO'
   ];
 
+  var exe = [
+    //
+    "EEEEE",
+    "EXXXX",
+    "EEEEE",
+    "EXXXX",
+    "EEEEE"
+  ];
+
+  var abba = [
+    //
+    "AAAAAA",
+    "AAABBA",
+    "AAABBA",
+    "ABBAAA",
+    "ABBAAA",
+    "AAAAAA"
+  ];
+
   var large = [
     //
     'RRRRIICCFF',
@@ -199,25 +218,60 @@ void main() {
 
   test('point perimeter', () {
     var zc1 = ZonesMap(map1);
-    expect(zc1.perimeter((0, 0)), 3);
-    expect(zc1.perimeter((0, 1)), 2);
-    expect(zc1.perimeter((0, 2)), 2);
-    expect(zc1.perimeter((0, 3)), 3);
-    expect(zc1.perimeter((1, 0)), 2);
-    expect(zc1.perimeter((1, 1)), 2);
-    expect(zc1.perimeter((1, 2)), 3);
-    expect(zc1.perimeter((1, 3)), 4);
-    expect(zc1.perimeter((2, 0)), 2);
-    expect(zc1.perimeter((2, 1)), 2);
-    expect(zc1.perimeter((2, 2)), 2);
-    expect(zc1.perimeter((2, 3)), 2);
-    expect(zc1.perimeter((3, 0)), 3);
-    expect(zc1.perimeter((3, 1)), 2);
-    expect(zc1.perimeter((3, 2)), 3);
-    expect(zc1.perimeter((3, 3)), 3);
+    expect(zc1.perimeterLengthFromCoords((0, 0)), 3);
+    expect(zc1.perimeterLengthFromCoords((0, 1)), 2);
+    expect(zc1.perimeterLengthFromCoords((0, 2)), 2);
+    expect(zc1.perimeterLengthFromCoords((0, 3)), 3);
+    expect(zc1.perimeterLengthFromCoords((1, 0)), 2);
+    expect(zc1.perimeterLengthFromCoords((1, 1)), 2);
+    expect(zc1.perimeterLengthFromCoords((1, 2)), 3);
+    expect(zc1.perimeterLengthFromCoords((1, 3)), 4);
+    expect(zc1.perimeterLengthFromCoords((2, 0)), 2);
+    expect(zc1.perimeterLengthFromCoords((2, 1)), 2);
+    expect(zc1.perimeterLengthFromCoords((2, 2)), 2);
+    expect(zc1.perimeterLengthFromCoords((2, 3)), 2);
+    expect(zc1.perimeterLengthFromCoords((3, 0)), 3);
+    expect(zc1.perimeterLengthFromCoords((3, 1)), 2);
+    expect(zc1.perimeterLengthFromCoords((3, 2)), 3);
+    expect(zc1.perimeterLengthFromCoords((3, 3)), 3);
 
     var zc2 = ZonesMap(["AAA", "ABA", "AAA"]);
-    expect(zc2.perimeter((1, 1)), 4);
+    expect(zc2.perimeterLengthFromCoords((1, 1)), 4);
+  });
+
+  group('count corners', () {
+    test('map1', () {
+      var zA = {(0, 0), (0, 1), (0, 2), (0, 3)};
+      expect(cornersCountFromCoords(zA, (0, 0)), 2);
+      expect(cornersCountFromCoords(zA, (0, 1)), 0);
+      expect(cornersCountFromCoords(zA, (0, 2)), 0);
+      expect(cornersCountFromCoords(zA, (0, 3)), 2);
+      expect(cornersCountFromZone(zA), 4);
+
+      var zB = {(1, 0), (1, 1), (2, 0), (2, 1)};
+      expect(cornersCountFromCoords(zB, (1, 0)), 1);
+      expect(cornersCountFromCoords(zB, (1, 1)), 1);
+      expect(cornersCountFromCoords(zB, (2, 0)), 1);
+      expect(cornersCountFromCoords(zB, (2, 1)), 1);
+      expect(cornersCountFromZone(zB), 4);
+
+      var zC = {(1, 2), (2, 2), (2, 3), (3, 3)};
+      expect(cornersCountFromCoords(zC, (1, 2)), 2);
+      expect(cornersCountFromCoords(zC, (2, 2)), 2);
+      expect(cornersCountFromCoords(zC, (2, 3)), 2);
+      expect(cornersCountFromCoords(zC, (3, 3)), 2);
+      expect(cornersCountFromZone(zC), 8);
+
+      var zD = {(1, 3)};
+      expect(cornersCountFromCoords(zD, (1, 3)), 4);
+      expect(cornersCountFromZone(zD), 4);
+
+      var zE = {(3, 0), (3, 1), (3, 2)};
+      expect(cornersCountFromCoords(zE, (3, 0)), 2);
+      expect(cornersCountFromCoords(zE, (3, 1)), 0);
+      expect(cornersCountFromCoords(zE, (3, 2)), 2);
+      expect(cornersCountFromZone(zE), 4);
+    });
   });
 
   test('zone data', () {
@@ -230,18 +284,22 @@ void main() {
     ];
     var zc1 = ZonesMap(map1);
     expect(List.from(zc1.zonesData(zs)),
-        [(10, 4), (8, 4), (10, 4), (4, 1), (8, 3)]);
+        [(4, 10, 4), (4, 8, 4), (4, 10, 8), (1, 4, 4), (3, 8, 4)]);
   });
 
-  test('const from zone data', () {
+  test('cost from zone data', () {
     expect(
-        fenceCostFromZoneData([(10, 4), (8, 4), (10, 4), (4, 1), (8, 3)]), 140);
+        fenceCostFromZoneData(
+            [(4, 10, 4), (4, 8, 4), (4, 10, 8), (1, 4, 4), (3, 8, 4)]),
+        (140, 80));
   });
 
   test('cost from map', () {
-    expect(ZonesMap(map1).fenceCost(), 140);
-    expect(ZonesMap(oxo).fenceCost(), 772);
-    expect(ZonesMap(large).fenceCost(), 1930);
+    expect(ZonesMap(map1).fenceCost(), (140, 80));
+    expect(ZonesMap(oxo).fenceCost(), (772, 436));
+    expect(ZonesMap(exe).fenceCost(), (692, 236));
+    expect(ZonesMap(abba).fenceCost(), (1184, 368));
+    expect(ZonesMap(large).fenceCost(), (1930, 1206));
   });
 
   group('ZoneCollector', () {

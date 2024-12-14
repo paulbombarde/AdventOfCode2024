@@ -1,68 +1,6 @@
 import 'dart:io';
 
 typedef Coords = (int, int);
-/*
-Iterable<Set<Coords>> computeZones(List<String> map) {
-  var coordsToZone = <List<int>>[];
-  var connections = <int, int>{};
-
-  int latestZoneId = 0;
-  for (int i = 0; i < map.length; ++i) {
-    var coordsToZoneLine = <int>[];
-    for (int j = 0; j < map[i].length; ++j) {
-      if (0 < i && map[i - 1][j] == map[i][j]) {
-        coordsToZoneLine.add(coordsToZone[i - 1][j]);
-        if (0 < j &&
-            map[i][j - 1] == map[i][j] &&
-            coordsToZoneLine[j] != coordsToZoneLine[j - 1]) {
-          if (connections.containsKey(coordsToZoneLine[j])) {
-            connections[coordsToZoneLine[j - 1]] =
-                connections[coordsToZoneLine[j]]!;
-          } else {
-            connections[coordsToZoneLine[j - 1]] = coordsToZoneLine[j];
-          }
-        }
-        continue;
-      }
-      if (0 < j && map[i][j - 1] == map[i][j]) {
-        coordsToZoneLine.add(coordsToZoneLine[j - 1]);
-        continue;
-      }
-      coordsToZoneLine.add(latestZoneId++);
-    }
-    coordsToZone.add(coordsToZoneLine);
-  }
-
-  var res = <int, Set<Coords>>{};
-  for (int i = 0; i < map.length; ++i) {
-    for (int j = 0; j < map[i].length; ++j) {
-      var realZoneId = coordsToZone[i][j];
-      if (connections.containsKey(realZoneId)) {
-        realZoneId = connections[realZoneId]!;
-      }
-
-      if (!res.containsKey(realZoneId)) {
-        res[realZoneId] = {};
-      }
-      res[realZoneId]!.add((i, j));
-    }
-  }
-
-  for (var e in res.entries) {
-    var debug_file = File("Debug-${e.key}.txt").openWrite();
-    for (int i = 0; i < map.length; ++i) {
-      for (int j = 0; j < map[i].length; ++j) {
-        if (e.value.contains((i, j)))
-          debug_file.write(map[i][j]);
-        else
-          debug_file.write(' ');
-      }
-      debug_file.write('\n');
-    }
-  }
-  return res.values;
-}
-*/
 
 class ZonesCollector {
   var zones = <Set<Coords>>[];
@@ -85,17 +23,35 @@ class ZonesMap {
   ZonesMap(this.map);
   ZonesMap.fromFile(String filePath) : this(File(filePath).readAsLinesSync());
 
-  int perimeter(Coords coords) {
-    var p = 0;
-    if (0 == coords.$1 ||
-        map[coords.$1 - 1][coords.$2] != map[coords.$1][coords.$2]) p++;
-    if (0 == coords.$2 ||
-        map[coords.$1][coords.$2 - 1] != map[coords.$1][coords.$2]) p++;
-    if (coords.$1 == map.length - 1 ||
-        map[coords.$1 + 1][coords.$2] != map[coords.$1][coords.$2]) p++;
-    if (coords.$2 == map[0].length - 1 ||
-        map[coords.$1][coords.$2 + 1] != map[coords.$1][coords.$2]) p++;
-    return p;
+  (int, int) fenceCost() {
+    var zs = zones();
+    var zd = zonesData(zs);
+    return fenceCostFromZoneData(zd);
+  }
+
+  Iterable<Set<Coords>> zones() {
+    var zc = ZonesCollector();
+    for (int x = 0; x < map.length; ++x) {
+      for (int y = 0; y < map[x].length; ++y) {
+        if (zc.collected((x, y))) continue;
+        zc.addZone(zoneFromCoord((x, y)));
+      }
+    }
+    return zc.zones;
+  }
+
+  Set<(int, int)> zoneFromCoord(Coords seed) {
+    var zone = <(int, int)>{seed};
+    var stack = [seed];
+    while (!stack.isEmpty) {
+      var top = stack.removeLast();
+      for (var n in neighbours(top)) {
+        if (zone.contains(n)) continue;
+        zone.add(n);
+        stack.add(n);
+      }
+    }
+    return zone;
   }
 
   Iterable<Coords> neighbours(Coords coords) {
@@ -104,7 +60,7 @@ class ZonesMap {
 
     if (0 < coords.$1 && map[coords.$1 - 1][coords.$2] == v)
       res.add((coords.$1 - 1, coords.$2));
-      
+
     if (0 < coords.$2 && map[coords.$1][coords.$2 - 1] == v)
       res.add((coords.$1, coords.$2 - 1));
 
@@ -117,112 +73,66 @@ class ZonesMap {
     return res;
   }
 
-  Set<(int, int)> zoneFromCoord(Coords seed) {
-    var zone = <(int, int)>{seed};
-    var stack = [seed];
-    while (!stack.isEmpty) {
-      var top = stack.removeLast();
-      for( var n in neighbours(top)) {
-        if(zone.contains(n)) continue;
-        zone.add(n);
-        stack.add(n);
-      }
-    }
-    return zone;
+  int perimeterLenghtFromZone(Set<Coords> zone) {
+    return zone.fold(
+        0, (acc, coords) => acc + perimeterLengthFromCoords(coords));
   }
 
-  Iterable<Set<Coords>> zones(){
-    var zc = ZonesCollector();
-    for(int x = 0; x<map.length; ++x){
-      for(int y = 0; y<map[x].length; ++y){
-        if(zc.collected((x,y))) continue;
-        zc.addZone(zoneFromCoord((x,y)));
-      }
-    }
-    return zc.zones;
+  int perimeterLengthFromCoords(Coords coords) {
+    var p = 0;
+    if (0 == coords.$1 ||
+        map[coords.$1 - 1][coords.$2] != map[coords.$1][coords.$2]) p++;
+    if (0 == coords.$2 ||
+        map[coords.$1][coords.$2 - 1] != map[coords.$1][coords.$2]) p++;
+    if (coords.$1 == map.length - 1 ||
+        map[coords.$1 + 1][coords.$2] != map[coords.$1][coords.$2]) p++;
+    if (coords.$2 == map[0].length - 1 ||
+        map[coords.$1][coords.$2 + 1] != map[coords.$1][coords.$2]) p++;
+    return p;
   }
 
-  Iterable<(int, int)> zonesData(Iterable<Set<Coords>> zones) {
-    var res = <(int, int)>[];
+  Iterable<(int, int, int)> zonesData(Iterable<Set<Coords>> zones) {
+    var res = <(int, int, int)>[];
     for (var zone in zones) {
-      var p = zone.fold(0, (acc, coords) => acc + perimeter(coords));
-      res.add((p, zone.length));
+      res.add((zone.length, perimeterLenghtFromZone(zone), cornersCountFromZone(zone)));
     }
     return res;
   }
-
-
-  int fenceCost() {
-    var zs = zones();
-    var zd = zonesData(zs);
-    return fenceCostFromZoneData(zd);
-  }
 }
 
-int fenceCostFromZoneData(Iterable<(int, int)> data) {
-  return data.fold(0, (acc, d) => acc + d.$1 * d.$2);
+(int, int) fenceCostFromZoneData(Iterable<(int, int, int)> data) {
+  return (data.fold(0, (acc, d) => acc + d.$1 * d.$2),
+          data.fold(0, (acc, d) => acc + d.$1 * d.$3));
 }
-  
 
-/*
-Iterable<Set<Coords>> computeZones(List<String> map) {
-  var coordsToZone = <List<int>>[];
-  var connections = <int, int>{};
-
-  int latestZoneId = 0;
-  for (int i = 0; i < map.length; ++i) {
-    var coordsToZoneLine = <int>[];
-    for (int j = 0; j < map[i].length; ++j) {
-      if (0 < i && map[i - 1][j] == map[i][j]) {
-        coordsToZoneLine.add(coordsToZone[i - 1][j]);
-        if (0 < j &&
-            map[i][j - 1] == map[i][j] &&
-            coordsToZoneLine[j] != coordsToZoneLine[j - 1]) {
-          if (connections.containsKey(coordsToZoneLine[j])) {
-            connections[coordsToZoneLine[j - 1]] =
-                connections[coordsToZoneLine[j]]!;
-          } else {
-            connections[coordsToZoneLine[j - 1]] = coordsToZoneLine[j];
-          }
-        }
-        continue;
-      }
-      if (0 < j && map[i][j - 1] == map[i][j]) {
-        coordsToZoneLine.add(coordsToZoneLine[j - 1]);
-        continue;
-      }
-      coordsToZoneLine.add(latestZoneId++);
-    }
-    coordsToZone.add(coordsToZoneLine);
-  }
-
-  var res = <int, Set<Coords>>{};
-  for (int i = 0; i < map.length; ++i) {
-    for (int j = 0; j < map[i].length; ++j) {
-      var realZoneId = coordsToZone[i][j];
-      if (connections.containsKey(realZoneId)) {
-        realZoneId = connections[realZoneId]!;
-      }
-
-      if (!res.containsKey(realZoneId)) {
-        res[realZoneId] = {};
-      }
-      res[realZoneId]!.add((i, j));
-    }
-  }
-
-  for (var e in res.entries) {
-    var debug_file = File("Debug-${e.key}.txt").openWrite();
-    for (int i = 0; i < map.length; ++i) {
-      for (int j = 0; j < map[i].length; ++j) {
-        if (e.value.contains((i, j)))
-          debug_file.write(map[i][j]);
-        else
-          debug_file.write(' ');
-      }
-      debug_file.write('\n');
-    }
-  }
-  return res.values;
+int cornersCountFromZone(Set<Coords> zone) {
+  return zone.fold(
+      0, (acc, coords) => acc + cornersCountFromCoords(zone, coords));
 }
-*/
+
+int cornersCountFromCoords(Set<Coords> zone, Coords coords) {
+  var deltas = [
+    (0, -1),
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, 1),
+    (1, 1),
+    (1, 0),
+    (1, -1),
+  ];
+
+  var inZone =
+      (delta) => zone.contains((coords.$1 + delta.$1, coords.$2 + delta.$2));
+  var count = 0;
+  for (int c = 0; c < 4; c++) {
+    var side1 = inZone(deltas[2 * c]);
+    var side2 = inZone(deltas[(2 * (c + 1)) % 8]);
+    var corner = inZone(deltas[2 * c + 1]);
+
+    if (!side1 && !side2) count++; // out corner
+    if (!corner && side1 && side2) count++; // in corner
+  }
+
+  return count;
+}
