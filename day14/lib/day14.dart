@@ -1,11 +1,4 @@
-import 'dart:io';
 import 'package:equatable/equatable.dart';
-
-int safetyFactor(String filePath) {
-  var robots = Robots.fromLines(File(filePath).readAsLinesSync());
-  var robots100 = robots.move(100, 101, 103);
-  return robots100.safetyFactor(101, 103);
-}
 
 class Robot extends Equatable {
   final int x;
@@ -63,5 +56,30 @@ class Robots extends Equatable {
         countIn(sx + 1, H, 0, sy) *
         countIn(0, sx, sy + 1, L) *
         countIn(sx + 1, H, sy + 1, L);
+  }
+
+  void display(int H, int L) {
+    var coords = {for (var r in robots) (r.x, r.y)};
+    int star = "*".codeUnitAt(0);
+    int space = " ".codeUnitAt(0);
+    for (int i = 0; i < H; ++i) {
+      var l = String.fromCharCodes(
+          [for (int j = 0; j < L; ++j) coords.contains((i, j)) ? star : space]);
+      print(l);
+    }
+  }
+
+  int coherency() {
+    var coords = {for (var r in robots) (r.x, r.y)};
+    var res = 0;
+    for (var c in coords) {
+      for (int i = -1; i <= 1; ++i) {
+        for (int j = -1; j <= 1; ++j) {
+          if(coords.contains((c.$1+i, c.$2+j))) res++;
+        }
+      }
+      res--;
+    }
+    return res;
   }
 }

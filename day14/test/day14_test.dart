@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:day14/day14.dart';
 import 'package:test/test.dart';
 
