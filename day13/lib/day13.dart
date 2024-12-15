@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'dart:convert';
 
-Future<int> minTokensFromFile(String filePath) async {
+Future<(int, int)> minTokensFromFile(String filePath) async {
   var lines = readLines(filePath);
   var machines = machinesFromLines(lines);
-  return priceFromMachines(machines);
+  return pricesFromMachines(machines);
 }
 
 class Machine {
@@ -47,30 +47,30 @@ class Machine {
         other.Y == Y;
   }
 
-  (int, int) solve() {
-    // A1*n + B1*m = X
-    // A2*n + B2*m = Y
+  (int, int) solve({int delta = 0}) {
+    // A1*n + B1*m = X+d
+    // A2*n + B2*m = Y+d
 
-    // A2*A1*n + A2*B1*m = A2*X
-    // A1*A2*n + A1*B2*m = A1*Y
+    // A2*A1*n + A2*B1*m = A2*(X+d)
+    // A1*A2*n + A1*B2*m = A1*(Y+d)
     // &&
-    // B2*A1*n + B2*B1*m = B2*X
-    // B1*A2*n + B1*B2*m = B1*Y
+    // B2*A1*n + B2*B1*m = B2*(X+d)
+    // B1*A2*n + B1*B2*m = B1*(Y+d)
 
-    // (B1*A2 - B2*A1)*m = A2*X - A1*Y
-    // (B2*A1 - B1*A2)*n = B2*X - B1*Y
+    // (B1*A2 - B2*A1)*m = A2*(X+d) - A1*(Y+d)
+    // (B2*A1 - B1*A2)*n = B2*(X+d) - B1*(Y+d)
     var Fm = B1 * A2 - B2 * A1;
-    var Rm = A2 * X - A1 * Y;
+    var Rm = A2 * (delta + X) - A1 * (delta + Y);
 
     var Fn = B2 * A1 - B1 * A2;
-    var Rn = B2 * X - B1 * Y;
+    var Rn = B2 * (delta + X) - B1 * (delta + Y);
     if (0 != Rn % Fn || 0 != Rm % Fm) return (0, 0);
     return (Rn ~/ Fn, Rm ~/ Fm);
   }
 
-  int price() {
-    var s = solve();
-    return 3*s.$1 + s.$2;
+  int price({int delta = 0}) {
+    var s = solve(delta: delta);
+    return 3 * s.$1 + s.$2;
   }
 }
 
@@ -89,8 +89,10 @@ Stream<Machine> machinesFromLines(Stream<String> lines) async* {
   }
 }
 
-Future<int> priceFromMachines(Stream<Machine> machines) async {
-  return machines.fold(0, (acc, m) => acc + m.price());
+Future<(int, int)> pricesFromMachines(Stream<Machine> machines) async {
+  var d = 10000000000000;
+  return machines.fold(
+      (0, 0), (acc, m) => (acc.$1 + m.price(), acc.$2 + m.price(delta: d)));
 }
 
 Stream<String> readLines(String filePath) {

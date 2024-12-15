@@ -63,28 +63,36 @@ void main() {
     var m = Machine(94, 34, 22, 67, 8400, 5400);
     expect(m.solve(), (80, 40));
     expect(m.price(), 280);
+    expect(m.solve(delta: 10000000000000), (0, 0));
+    expect(m.price(delta: 10000000000000), 0);
   });
 
   test('Machine solve 2', () {
     var m = Machine(26, 66, 67, 21, 12748, 12176);
     expect(m.solve(), (0, 0));
     expect(m.price(), 0);
+    expect(m.solve(delta: 10000000000000), (118679050709, 103199174542));
+    expect(m.price(delta: 10000000000000), 459236326669);
   });
 
   test('Machine solve 3', () {
     var m = Machine(17, 86, 84, 37, 7870, 6450);
     expect(m.solve(), (38, 86));
     expect(m.price(), 200);
+    expect(m.solve(delta: 10000000000000), (0, 0));
+    expect(m.price(delta: 10000000000000), 0);
   });
 
   test('Machine solve 4', () {
     var m = Machine(69, 23, 27, 71, 18641, 10279);
     expect(m.solve(), (0, 0));
     expect(m.price(), 0);
+    expect(m.solve(delta: 10000000000000), (102851800151, 107526881786));
+    expect(m.price(delta: 10000000000000), 416082282239);
   });
 
   test('price from Machines', () async {
-    var p = priceFromMachines(Stream.fromIterable(sampleMachines));
-    expect(await p, 480);
+    var p = pricesFromMachines(Stream.fromIterable(sampleMachines));
+    expect(await p, (480, 875318608908));
   });
 }
