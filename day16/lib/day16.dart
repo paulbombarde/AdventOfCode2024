@@ -1,8 +1,7 @@
-import 'dart:collection';
 import 'dart:math';
 import 'dart:io';
 
-int computeSmallestScore(String filePath) {
+(int, int) computeSmallestScore(String filePath) {
   var lines = File(filePath).readAsLinesSync();
   var m = Mapp(lines);
   return m.computeSmallestScore();
@@ -93,74 +92,7 @@ class Mapp {
     return map[p.$1][p.$2] == "#";
   }
 
-  int computeSmallestScore() {
-    /*
-    var g = buildGraph();
-    // g.display();
-    var start = (map.length - 2, 1);
-    var end = (1, map.length - 2);
-    return g.computeShortest(start, end);
-    */
-    return dijkstra();
-  }
-
-  Graph buildGraph() {
-    var g = Graph();
-
-    var s = (map.length - 2, 1);
-    var e = (1, map.length - 2);
-
-    var q = Queue<({Coord current, Coord source, Dir dir, int cost})>();
-    var seen = <Coord>{};
-    q.addFirst((current: s, source: s, dir: Dir.East, cost: 0));
-    while (!q.isEmpty) {
-      var l = q.removeLast();
-      seen.add(l.current);
-
-      {
-        var front = l.dir.add(l.current);
-        if (!isWall(front)) {
-          q.addFirst(
-              (current: front, source: l.source, dir: l.dir, cost: l.cost + 1));
-        }
-      }
-
-      {
-        var leftDir = l.dir.turnLeft();
-        var left = leftDir.add(l.current);
-        if (!isWall(left)) {
-          g.add(l);
-          if (!seen.contains(left))
-            q.addFirst(
-                (current: left, source: l.current, dir: leftDir, cost: 1));
-        }
-      }
-
-      {
-        var rightDir = l.dir.turnRight();
-        var right = rightDir.add(l.current);
-        if (!isWall(right)) {
-          g.add(l);
-          if (!seen.contains(right))
-            q.addFirst(
-                (current: right, source: l.current, dir: rightDir, cost: 1));
-        }
-      }
-
-      {
-        if (l.current == e) {
-          // We don't keep dead ends, but the exit may be one
-          // so, we need to be sure to keep paths to that point
-          g.add(l);
-        }
-      }
-    }
-
-    g.finalize();
-    return g;
-  }
-
-  int dijkstra(){
+  (int, int) computeSmallestScore() {
     var unvisited = <(Coord, Dir)>{};
     for(int i=0; i<map.length; ++i){
       for(int j=0; j<map[i].length; ++j){
@@ -174,126 +106,69 @@ class Mapp {
     }
 
     int infinity = 1000 * map.length * map[0].length;
-    var distances = {for (var v in unvisited) v: infinity};
+    var distances = {for (var v in unvisited) v: DData(infinity)};
 
     var start = (map.length - 2, 1);
-    distances[(start, Dir.East)] = 0;
+    var startData = DData(0)..nodes.add(start);
+    distances[(start, Dir.East)] = startData;
     unvisited.add((start, Dir.East));
 
     while (!unvisited.isEmpty) {
       var next = ((0, 0), Dir.None);
-      var mind = infinity;
+      var minCost = infinity;
       for (var v in unvisited) {
-        if (distances[v]! < mind) {
-          mind = distances[v]!;
+        if (distances[v]!.cost < minCost) {
+          minCost = distances[v]!.cost;
           next = v;
         }
       }
-      if (mind == infinity) break; // Should not happen
+      if (minCost == infinity) break; // Should not happen
 
       for( var d in [next.$2, next.$2.turnLeft(), next.$2.turnRight()]){
         var c = d.add(next.$1);
         if(isWall(c)) continue;
 
-        var cost = mind + 1;
+        var cost = minCost + 1;
         if(d != next.$2) cost += 1000;
 
         var node = (c,d);
-        distances[node] = min(distances[node]!, cost);
+        if(cost == distances[node]!.cost){
+          distances[node]!.nodes.addAll(distances[next]!.nodes);
+          distances[node]!.nodes.add(c);
+        }
+        else if(cost < distances[node]!.cost){
+          var d = DData(cost);
+          d.nodes.addAll(distances[next]!.nodes);
+          d.nodes.add(c);
+          distances[node] = d;
+        }
       }
       unvisited.remove(next);
     }
 
     var end = (1, map.length - 2);
-    var endDistances = [for (var d in Dir.valids()) distances[(end, d)]??infinity];
-    return endDistances.reduce(min);
+    var ends = [for (var d in Dir.valids()) (end,d)];
+    var endDistance = infinity;
+    var endSpotNumber= 0;
+    for(var e in ends){
+      if(!distances.containsKey(e)) continue;
+      if(distances[e]!.cost < endDistance)
+      {
+        endDistance = distances[e]!.cost;
+        endSpotNumber = distances[e]!.nodes.length;
+      } 
+      if(distances[e]!.cost == endDistance){
+        endSpotNumber = max(endSpotNumber, distances[e]!.nodes.length);
+      }
+    }
+    return (endDistance, endSpotNumber);
 
   }
 }
 
-typedef MapParseRecord = ({Coord current, Coord source, Dir dir, int cost});
-typedef GraphElem = (Coord, Coord);
-int compareGE(GraphElem a, GraphElem b) {
-  if (a.$1.$1 < b.$1.$1) return -1;
-  if (a.$1.$1 > b.$1.$1) return 1;
-  if (a.$1.$2 < b.$1.$2) return -1;
-  if (a.$1.$2 > b.$1.$2) return 1;
-  if (a.$2.$1 < b.$2.$1) return -1;
-  if (a.$2.$1 > b.$2.$1) return 1;
-  if (a.$2.$2 < b.$2.$2) return -1;
-  if (a.$2.$2 > b.$2.$2) return 1;
-  return 0;
-}
+class DData{
+  int cost;
+  var nodes = <Coord>{};
 
-class Graph {
-  var graph = <GraphElem, int>{};
-
-  void add(MapParseRecord r) {
-    var e = (r.source, r.current);
-    if (graph.containsKey(e)) {
-      graph[e] = min(graph[e]!, r.cost);
-    } else {
-      graph[e] = r.cost;
-    }
-  }
-
-  void finalize(){
-    var keys = graph.keys.toList();
-    for(var k in keys){
-      graph[(k.$2, k.$1)] = graph[k]!;
-    }
-  }
-
-  void display() {
-    var keys = graph.keys.toList()..sort(compareGE);
-    for (var k in keys) {
-      print("${k.$1} => ${k.$2} ${graph[k]}");
-    }
-  }
-
-  int computeShortest(Coord start, Coord end) {
-    // Djisktra... The nodes are coords + direction of arrival
-    var unvisited = <(Coord, Dir)>{};
-    for (var e in graph.keys) {
-      for(var d in Dir.valids()){
-        unvisited.add((e.$1, d));
-        unvisited.add((e.$2, d));
-      }
-    }
-
-    int infinity = 1000 *
-        (max<int>(start.$1, end.$1) - min<int>(start.$1, end.$1)) *
-        (max(start.$2, end.$2) - min(start.$2, end.$2));
-    var distances = {for (var v in unvisited) v: infinity};
-    distances[(start, Dir.East)] = 0;
-
-    while (!unvisited.isEmpty) {
-      var next = ((0, 0), Dir.None);
-      var mind = infinity;
-      for (var v in unvisited) {
-        if (distances[v]! < mind) {
-          mind = distances[v]!;
-          next = v;
-        }
-      }
-      if (mind == infinity) break; // Should not happen
-
-      for (var v in unvisited) {
-        var e = (next.$1, v.$1);
-        if (graph.containsKey(e)) {
-          var cost = mind + graph[e]!;
-          var dir = Dir.fromCoords(e.$1, e.$2);
-          if(next.$2 != dir) cost+=1000;
-          if(next.$2 == dir.halfTurn()) cost+=1000;
-
-          var real = (v.$1, dir);
-          distances[real] = min(distances[real]!, cost);
-        }
-      }
-      unvisited.remove(next);
-    }
-
-    var endDistances = [for (var d in Dir.valids()) distances[(end, d)]!];
-    return endDistances.reduce(min);
-  }
+  DData(this.cost);
 }
