@@ -1,14 +1,39 @@
 import 'dart:io';
 import 'dart:collection';
 
-int calculate(String filePath) {
+(int, (int, int)) calculate(String filePath) {
   var lines = File(filePath).readAsLinesSync();
 
   var map = MMap.fromLines(lines.take(1024), 70);
-  return map.shortest();
+  var s = map.shortest();
+  var b = firstBlock(lines, 70);
+
+  return (s, b);
 }
 
 typedef Coords = (int, int);
+
+Coords firstBlock(List<String> lines, int size) {
+  var corrupted = [for (var l in lines) readLine(l)];
+
+  var max = lines.length;
+  var min = 0;
+  while (min < (max - 1)) {
+    var mid = (max + min) ~/ 2;
+
+    var map =MMap(corrupted.take(mid).toSet(), size);
+    var s2 = map.shortest();
+
+    if (0 < s2) { // valid
+      min = mid;
+    } else {
+      max = mid;
+    }
+  }
+
+  return corrupted[min];
+}
+
 Coords readLine(String line) {
   var coords = line.split(',');
   return (int.parse(coords[0]), int.parse(coords[1]));
@@ -41,7 +66,11 @@ class MMap {
   }
 
   bool valid(Coords c) {
-    return 0 <= c.$1 && 0 <= c.$2 && c.$1 <= size && c.$2 <= size && !corrupted.contains(c);
+    return 0 <= c.$1 &&
+        0 <= c.$2 &&
+        c.$1 <= size &&
+        c.$2 <= size &&
+        !corrupted.contains(c);
   }
 
   int shortest() {
@@ -55,11 +84,11 @@ class MMap {
         var n = d.next(c);
         if (dists.containsKey(n) || !valid(n)) continue;
         dists[n] = dists[c]! + 1;
-        if(n == (size, size)) return dists[n]!;
+        if (n == (size, size)) return dists[n]!;
         q.addFirst(n);
       }
     }
 
-    return dists[(size, size)]!;
+    return -1;
   }
 }

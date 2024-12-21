@@ -30,8 +30,9 @@ void main() {
     "2,0",
   ];
 
-  test('calculate', () {
+  test('sample', () {
     var m = MMap.fromLines(sample.take(12), 6);
     expect(m.shortest(), 22);
+    expect(firstBlock(sample, 6), (6,1));
   });
 }
