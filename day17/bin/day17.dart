@@ -10,5 +10,17 @@ void main(List<String> arguments) {
   ];
 
   var c = day17.Program.fromLines(input);
-  print(c.output());
+  print("Output:");
+  print(c.output() + "\n");
+
+  print("Assembly:");
+  print(c.assembly() + "\n");
+
+  var A = c.repeatA(3);
+  print("A: $A");
+
+  print("Expected: "+c.instructions.join(','));
+  var c2 = day17.Computer(90938893795561, 0, 0);
+  c2.run(c.instructions);
+  print("Result  : "+c2.output.join(','));
 }

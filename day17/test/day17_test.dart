@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:day17/day17.dart';
 import 'package:test/test.dart';
 
@@ -111,5 +109,12 @@ void main() {
     s.run([0,1,5,4,3,0]);
     expect(s.A, 0);
     expect(s.output, [4,6,3,5,6,3,5,2,1,0]);
+  });
+
+  test('repeat', (){
+    var s = Program(729, 0, 0, [0,3,5,4,3,0]);
+    expect(s.repeatABruteForce(), 117440);
+    print(s.assembly());
+    expect(s.repeatA(3), 117440);
   });
 }
