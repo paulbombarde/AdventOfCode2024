@@ -1,17 +1,20 @@
 import 'dart:io';
 import 'dart:collection';
-import 'dart:math';
 
-int calculate(String filePath) {
+(int, int) calculate(String filePath) {
   var lines = File(filePath).readAsLinesSync();
   var t = Track.fromLines(lines);
-  var cheats = t.cheats();
-  return nbCheats(countCheats(cheats), 100);
+  var cheats2 = t.cheats(2);
+  var cheats20 = t.cheats(20);
+  return (
+    nbCheats(countCheats(cheats2, 100)),
+    nbCheats(countCheats(cheats20, 100))
+  );
 }
 
 typedef Coords = (int, int);
 typedef Path = List<Coords>;
-typedef Cheat = (Coords, Coords, int); // first, second, saving
+typedef Cheat = (Coords, Coords); // first, second, saving
 
 enum Dir {
   North(-1, 0),
@@ -81,8 +84,10 @@ class Track {
   }
 
   bool isValid(Coords c) {
-    if (c.$1 < 0 || c.$2 < 0 || map.length <= c.$1 || map[0].length <= c.$2)
-      return false;
+    if(c.$1 < 0 ||
+        c.$2 < 0 ||
+        map.length <= c.$1 ||
+        map[0].length <= c.$2) return false;
     return "#" != map[c.$1][c.$2];
   }
 
@@ -90,34 +95,40 @@ class Track {
     return distFromStart[end]!;
   }
 
-  int cheat(Coords first, Coords second) {
-    if (isValid(first) || !isValid(second)) return -1;
-    if (!distToEnd.containsKey(second)) return -1;
+  int cheat(Coords first, Coords last) {
+    if (!isValid(first) || !isValid(last)) return -1;
+    if (!distFromStart.containsKey(first) || !distToEnd.containsKey(last)) return -1;
 
-    int fromStart = infinity;
-    for (var d in Dir.values) {
-      var f = d.next(first);
-      if (f == second) continue;
-      if (!distFromStart.containsKey(f)) continue;
-      fromStart = min(fromStart, distFromStart[f]!);
-    }
-
-    if (fromStart == infinity) return -1;
-    return fromStart + distToEnd[second]! + 2;
+    int dx = (first.$1 - last.$1).abs();
+    int dy = (first.$2 - last.$2).abs();
+    return distFromStart[first]! + distToEnd[last]! + dx + dy;
   }
 
-  List<Cheat> cheats() {
+  Map<Cheat, int> cheats(int dist) {
     var ref = shortest();
-    var cheats = <Cheat>[];
+    var cheats = <Cheat, int>{};
 
-    for (int i = 1; i < map.length - 1; ++i) {
-      for (int j = 1; j < map[i].length - 1; ++j) {
+    var deltas = <Coords>[];
+    for (int d = 1; d <= dist; ++d) {
+      for (int dx = 0; dx <= d; ++dx) {
+        int dy = d - dx;
+        deltas.add((dx, dy));
+        deltas.add((-dx, dy));
+        deltas.add((dx, -dy));
+        deltas.add((-dx, -dy));
+      }
+    }
+
+    for (int i = 0; i < map.length - 1; ++i) {
+      for (int j = 0; j < map[i].length - 1; ++j) {
         var first = (i, j);
-        for (var d in Dir.values) {
-          var second = d.next(first);
-          var v = cheat(first, second);
+        if (!isValid(first)) continue;
+
+        for (var delta in deltas) {
+          var last = (first.$1 + delta.$1, first.$2 + delta.$2);
+          var v = cheat(first, last);
           if (v < 0 || ref <= v) continue;
-          cheats.add((first, second, ref - v));
+          cheats[(first, last)] = ref - v;
         }
       }
     }
@@ -125,19 +136,19 @@ class Track {
   }
 }
 
-Map<int, int> countCheats(List<Cheat> cheats) {
+Map<int, int> countCheats(Map<Cheat, int> cheats, int threshold) {
   var counts = <int, int>{};
-  for (var cheat in cheats) {
-    counts[cheat.$3] = (counts[cheat.$3] ?? 0) + 1;
+  for (var cheat in cheats.entries) {
+    if (cheat.value < threshold) continue;
+    counts[cheat.value] = (counts[cheat.value] ?? 0) + 1;
   }
   return counts;
 }
 
-int nbCheats(Map<int, int> cheatCounts, int threshold){
-  var n=0;
-  for(var e in cheatCounts.entries){
-    if(e.key < threshold) continue;
-    n+=e.value;
+int nbCheats(Map<int, int> cheatCounts) {
+  var n = 0;
+  for (var e in cheatCounts.entries) {
+    n += e.value;
   }
   return n;
 }
