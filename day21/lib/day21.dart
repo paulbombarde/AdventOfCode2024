@@ -2,29 +2,118 @@ import 'dart:collection';
 import 'dart:math';
 
 int calculate(List<String> codes) {
-  return codes.fold(0, (sum, code) => sum + complexity(code));
+  final stopwatch = Stopwatch()..start();
+  var res = codes.fold(0, (sum, code) => sum + complexity(code));
+  print('calculate executed in ${stopwatch.elapsed}');
+  return res;
 }
 
-int complexity(String code) {
-  var keys = Pad.keys();
-  var nums = Pad.nums();
+int calculate2(List<String> codes, int nbRobots) {
+  final stopwatch = Stopwatch()..start();
+  var res = codes.fold(0, (sum, code) => sum + complexity2(code, nbRobots));
+  print('calculate2 executed in ${stopwatch.elapsed}');
+  return res;
+}
 
-  var seqs0 = {code};
-  var seqs1 = keys.allShortest(seqs0);
-  var seqs2 = nums.allShortest(seqs1);
-  var seqs3 = nums.allShortest(seqs2);
+int complexity(String code, {nbRobots = 2}) {
+  var c = Calculator();
+  var s = c.shortests(code, nbRobots);
+  var val = int.parse(code.substring(0, code.length - 1));
+  return val * s.first.length;
+}
 
-  var minLength = 10000000000;
-  for(var s in seqs3){
-    minLength = min(minLength, s.length);
-  }
+int shortestLenth(Iterable<String> seqs) {
+  return seqs.map((s) => s.length).reduce(min);
+}
 
-  var val = int.parse(code.substring(0, code.length-1));
-
-  return val * minLength;
+int complexity2(String code, int nbRobots) {
+  var c = Calculator();
+  var val = int.parse(code.substring(0, code.length - 1));
+  return val * c.minLengthForCode(code, nbRobots);
 }
 
 typedef Coord = (int, int);
+
+class Calculator {
+  var keys = Pad.keys();
+  var dirs = Pad.directional();
+
+  Set<String> shortests(String code, int nbRobots) {
+    var seqs = keys.shortests(code);
+    for (int i = 0; i < nbRobots; ++i) {
+      var tmp = dirs.allShortest(seqs);
+      var l = shortestLenth(tmp);
+      seqs.clear();
+      for (var s in tmp) {
+        if (s.length == l) seqs.add(s);
+      }
+    }
+    return seqs;
+  }
+
+  int minLengthForCode(String code, int nbRobots) {
+    var seqs = keys.shortests(code);
+    if (0 == nbRobots) return seqs.first.length;
+    return seqs.map((s) => minLengthForDirCode(s, nbRobots-1)).reduce(min);
+  }
+
+  int minLengthForDirCode(String code, int req) {
+    var l = 0;
+    var prev = "A";
+    for (int i = 0; i < code.length; ++i) {
+      l += minLengthForBetweenKeys(prev, code[i], req);
+      prev = code[i];
+    }
+    return l;
+  }
+
+  var minLengthForBetweenKeysCache = <(String, String, int), int>{};
+  // Warning: for codes that alternates between up/down and left/right:
+  // 1. we shall not mix them
+  // 2. the order matters
+  // Expriments lead to that result
+  final bestPathBetweenKeys = <(String, String), String>{
+    ("^", "^"): "A",
+    ("^", "A"): ">A",
+    ("^", "<"): "v<A",
+    ("^", "v"): "vA",
+    ("^", ">"): "v>A",
+    ("A", "^"): "<A",
+    ("A", "A"): "A",
+    ("A", "<"): "v<<A",
+    ("A", "v"): "<vA",
+    ("A", ">"): "vA",
+    ("<", "^"): ">^A",
+    ("<", "A"): ">>^A",
+    ("<", "<"): "A",
+    ("<", "v"): ">A",
+    ("<", ">"): ">>A",
+    ("v", "^"): "^A",
+    ("v", "A"): "^>A",
+    ("v", "<"): "<A",
+    ("v", "v"): "A",
+    ("v", ">"): ">A",
+    (">", "^"): "<^A",
+    (">", "A"): "^A",
+    (">", "<"): "<<A",
+    (">", "v"): "<A",
+    (">", ">"): "A",
+  };
+
+  int minLengthForBetweenKeys(String start, String end, int req) {
+    var key = (start, end, req);
+    if (!minLengthForBetweenKeysCache.containsKey(key)) {
+      if (req == 0) {
+        minLengthForBetweenKeysCache[key] =
+            bestPathBetweenKeys[(start, end)]!.length;
+      } else {
+        var p = bestPathBetweenKeys[(start, end)]!;
+        minLengthForBetweenKeysCache[key] = minLengthForDirCode(p, req - 1);
+      }
+    }
+    return minLengthForBetweenKeysCache[key]!;
+  }
+}
 
 class Pad {
   final Map<String, Coord> pad;
@@ -60,7 +149,7 @@ class Pad {
   // +---+---+---+
   // | < | v | > |
   // +---+---+---+
-  Pad.nums()
+  Pad.directional()
       : this({
           "^": (0, 1),
           "A": (0, 2),
